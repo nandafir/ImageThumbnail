@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"image"
 	"image/color"
 	"runtime"
@@ -9,23 +10,33 @@ import (
 )
 
 func main() {
+
+	for i := 1; i < 8; i++ {
+
+		nda := i * 100
+		err := GenerateThumbnail("sneakers.jpg", nda)
+		fmt.Println(err)
+	}
+
+}
+
+func GenerateThumbnail(files string, size int) error {
 	// use all CPU cores for maximum performance
 	runtime.GOMAXPROCS(runtime.NumCPU())
 
 	// input files
-	files := "sneakers.jpg"
 	img, err := imaging.Open(files)
 	if err != nil {
-		panic(err)
+		return err
 	}
 
 	//get proportional size
-	width, height, pointX, pointY := getImageSize(img, 500)
+	width, height, pointX, pointY := GetImageSize(img, size)
 
 	imgContent := imaging.Thumbnail(img, width, height, imaging.CatmullRom)
 
 	// create a new blank image
-	squarePixel := 500
+	squarePixel := size
 	dst := imaging.New(squarePixel, squarePixel, color.White)
 
 	// paste thumbnails into the new image side by side
@@ -34,13 +45,16 @@ func main() {
 	dst = imaging.Paste(dst, imgContent, image.Pt(pointX, pointY))
 
 	// save the combined image to file
-	err = imaging.Save(dst, "01_thumbnail-"+files)
+	fileName := fmt.Sprintf("images/01_%v_%v", size, files)
+	err = imaging.Save(dst, fileName)
 	if err != nil {
-		panic(err)
+		return err
 	}
+
+	return nil
 }
 
-func getImageSize(img image.Image, origin int) (int, int, int, int) {
+func GetImageSize(img image.Image, origin int) (int, int, int, int) {
 
 	var height, width, pointX, pointY int
 
@@ -58,10 +72,8 @@ func getImageSize(img image.Image, origin int) (int, int, int, int) {
 		if height > width { //potrait
 
 			//get size ratio
-			if width > origin {
-				cal := float64(width) / float64(height) * float64(origin)
-				width = int(cal)
-			}
+			cal := float64(width) / float64(height) * float64(origin)
+			width = int(cal)
 
 			height = origin
 			pointX = (height - width) / 2
@@ -69,12 +81,10 @@ func getImageSize(img image.Image, origin int) (int, int, int, int) {
 		} else { //landscape
 
 			//get size ratio
-			if height > origin {
-				cal := float64(height) / float64(width) * float64(origin)
-				height = int(cal)
-			}
-
+			cal := float64(height) / float64(width) * float64(origin)
+			height = int(cal)
 			width = origin
+
 			pointY = (width - height) / 2
 		}
 
